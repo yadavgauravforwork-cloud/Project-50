@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goa Event Hub — Villas, Yachts, Décor, Vehicles & Everything on Rent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{font-family:'Inter',sans-serif;margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{background:#0a0a0a;color:#f5f5f4;overflow-x:hidden}
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:#0a0a0a}
+    ::-webkit-scrollbar-thumb{background:#44403c;border-radius:3px}
+
+    .glass{background:rgba(23,23,23,0.5);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.05)}
+    .accent{color:#d97706}
+    .accent-bg{background:#d97706}
+
+    .fade-up{opacity:0;transform:translateY(40px);transition:all .7s cubic-bezier(.22,1,.36,1)}
+    .fade-up.visible{opacity:1;transform:translateY(0)}
+    .d1{transition-delay:.05s}.d2{transition-delay:.1s}.d3{transition-delay:.15s}
+    .d4{transition-delay:.2s}.d5{transition-delay:.25s}.d6{transition-delay:.3s}
+    .d7{transition-delay:.35s}.d8{transition-delay:.4s}.d9{transition-delay:.45s}
+    .d10{transition-delay:.5s}
+
+    .card{transition:transform .4s ease,box-shadow .4s ease}
+    .card:hover{transform:translateY(-6px);box-shadow:0 20px 40px -12px rgba(0,0,0,.5)}
+    .card img{transition:transform .6s ease}
+    .card:hover img{transform:scale(1.06)}
+
+    .tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;padding:4px 10px;border-radius:6px}
+    .tag-hot{background:#dc2626;color:#fff}
+    .tag-new{background:#2563eb;color:#fff}
+
+    .btn-primary{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#d97706;color:#0a0a0a;font-size:14px;font-weight:600;border-radius:12px;border:none;cursor:pointer;transition:background .2s}
+    .btn-primary:hover{background:#f59e0b}
+    .btn-outline{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:transparent;color:#d6d3d1;font-size:14px;font-weight:500;border-radius:12px;border:1px solid #44403c;cursor:pointer;transition:border-color .2s,color .2s}
+    .btn-outline:hover{border-color:#78716c;color:#fff}
+    .btn-sm{padding:8px 16px;font-size:13px;border-radius:10px}
+
+    input,select,textarea{font-family:'Inter',sans-serif}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(217,119,6,.4)!important}
+
+    .toast{position:fixed;bottom:24px;right:24px;z-index:9999;padding:14px 20px;border-radius:14px;background:rgba(23,23,23,.95);backdrop-filter:blur(16px);border:1px solid rgba(217,119,6,.25);transform:translateY(120%);opacity:0;transition:all .4s cubic-bezier(.22,1,.36,1);display:flex;align-items:center;gap:10px}
+    .toast.show{transform:translateY(0);opacity:1}
+
+    .mob-menu{position:fixed;inset:0;z-index:90;background:#0a0a0a;transform:translateX(100%);transition:transform .35s ease}
+    .mob-menu.open{transform:translateX(0)}
+
+    .search-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-start;justify-content:center;padding-top:120px;opacity:0;pointer-events:none;transition:opacity .25s}
+    .search-overlay.open{opacity:1;pointer-events:all}
+    .search-overlay .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px)}
+  </style>
+</head>
+<body>
+
+<!-- Toast -->
+<div id="toast" class="toast">
+  <span class="iconify accent text-lg" data-icon="mdi:check-circle-outline"></span>
+  <span id="toastMsg" class="text-sm text-stone-300"></span>
+</div>
+
+<!-- Search -->
+<div id="searchOverlay" class="search-overlay">
+  <div class="backdrop" onclick="closeSearch()"></div>
+  <div class="relative glass rounded-2xl w-full max-w-xl mx-4 p-2">
+    <div class="flex items-center gap-3 px-4">
+      <span class="iconify text-stone-600" data-icon="mdi:magnify"></span>
+      <input id="searchInput" type="text" placeholder="Search services..." class="w-full bg-transparent py-3.5 text-base text-stone-100 placeholder-stone-600 border-none">
+      <kbd class="text-[11px] text-stone-600 border border-stone-800 rounded px-1.5 py-0.5 hidden sm:block">ESC</kbd>
+    </div>
+    <div id="searchResults" class="border-t border-stone-800/60 mt-1 pt-3 px-4 pb-3 hidden"></div>
+  </div>
+</div>
+
+<!-- Mobile Menu -->
+<div id="mobMenu" class="mob-menu">
+  <div class="flex justify-between items-center p-5 border-b border-stone-800/40">
+    <span class="font-semibold text-stone-200">Menu</span>
+    <button onclick="toggleMob()" class="text-stone-500 hover:text-stone-200 transition"><span class="iconify text-2xl" data-icon="mdi:close"></span></button>
+  </div>
+  <nav class="p-6 flex flex-col gap-5">
+    <a href="#services" onclick="toggleMob()" class="text-lg text-stone-300 hover:text-white transition">Services</a>
+    <a href="#popular" onclick="toggleMob()" class="text-lg text-stone-300 hover:text-white transition">Popular</a>
+    <a href="#packages" onclick="toggleMob()" class="text-lg text-stone-300 hover:text-white transition">Packages</a>
+    <a href="#process" onclick="toggleMob()" class="text-lg text-stone-300 hover:text-white transition">How It Works</a>
+    <a href="#reviews" onclick="toggleMob()" class="text-lg text-stone-300 hover:text-white transition">Reviews</a>
+    <a href="#contact" onclick="toggleMob()" class="text-lg text-stone-300 hover:text-white transition">Contact</a>
+    <a href="tel:+919876543210" class="btn-primary justify-center mt-4">Call Now</a>
+  </nav>
+</div>
+
+<!-- Nav -->
+<nav id="mainNav" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+  <div class="max-w-6xl mx-auto px-5 py-4">
+    <div class="glass rounded-2xl px-5 py-3.5 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-lg accent-bg flex items-center justify-center">
+          <span class="iconify text-neutral-950 text-lg" data-icon="mdi:party-popper"></span>
+        </div>
+        <span class="text-[15px] font-semibold text-stone-100 tracking-tight">Goa Event Hub</span>
+      </a>
+      <div class="hidden md:flex items-center gap-7">
+        <a href="#services" class="text-[13px] text-stone-500 hover:text-stone-200 transition">Services</a>
+        <a href="#popular" class="text-[13px] text-stone-500 hover:text-stone-200 transition">Popular</a>
+        <a href="#packages" class="text-[13px] text-stone-500 hover:text-stone-200 transition">Packages</a>
+        <a href="#reviews" class="text-[13px] text-stone-500 hover:text-stone-200 transition">Reviews</a>
+        <a href="#contact" class="text-[13px] text-stone-500 hover:text-stone-200 transition">Contact</a>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <button onclick="openSearch()" class="w-9 h-9 rounded-lg border border-stone-800 flex items-center justify-center text-stone-600 hover:text-stone-200 hover:border-stone-600 transition">
+          <span class="iconify text-base" data-icon="mdi:magnify"></span>
+        </button>
+        <a href="#contact" class="btn-primary btn-sm hidden sm:inline-flex">Get Quote</a>
+        <button onclick="toggleMob()" class="md:hidden w-9 h-9 rounded-lg border border-stone-800 flex items-center justify-center text-stone-600 hover:text-stone-200 transition">
+          <span class="iconify text-lg" data-icon="mdi:menu"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="min-h-screen flex items-center relative">
+  <div class="absolute inset-0">
+    <img src="https://picsum.photos/seed/goa-beach-sunset-event/1600/900.jpg" alt="Goa Beach" class="w-full h-full object-cover opacity-20">
+    <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-[#0a0a0a]/40"></div>
+  </div>
+  <div class="relative z-10 max-w-6xl mx-auto px-5 pt-28 pb-20 w-full">
+    <div class="max-w-2xl fade-up">
+      <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 mb-6">
+        <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+        <span class="text-[11px] font-medium uppercase tracking-[.15em] text-stone-500">Goa's Trusted Event Partner</span>
+      </div>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.1] tracking-tight mb-5">
+        Villas, Yachts,<br>Cars & Everything<br>for Your <span class="accent">Goa Event</span>
+      </h1>
+      <p class="text-base text-stone-400 leading-relaxed mb-8 max-w-lg">
+        One call gets you décor, DJ, catering, yacht, villa, vehicle, tent, bar counter — 50+ services across North and South Goa. No vendor juggling.
+      </p>
+      <div class="flex flex-wrap gap-3 mb-12">
+        <a href="#services" class="btn-primary">View All Services <span class="iconify text-base" data-icon="mdi:arrow-right"></span></a>
+        <a href="https://wa.me/919876543210?text=Hi%2C%20I%20need%20event%20services%20in%20Goa" target="_blank" class="btn-outline">
+          <span class="iconify text-green-400" data-icon="mdi:whatsapp"></span> WhatsApp
+        </a>
+      </div>
+      <div class="flex flex-wrap gap-x-10 gap-y-3">
+        <div><span class="text-2xl font-bold text-stone-100">500+</span><p class="text-[11px] text-stone-600 uppercase tracking-wider">Events Done</p></div>
+        <div><span class="text-2xl font-bold text-stone-100">50+</span><p class="text-[11px] text-stone-600 uppercase tracking-wider">Rent Items</p></div>
+        <div><span class="text-2xl font-bold text-stone-100">4.9★</span><p class="text-[11px] text-stone-600 uppercase tracking-wider">Client Rating</p></div>
+        <div><span class="text-2xl font-bold text-stone-100">All Goa</span><p class="text-[11px] text-stone-600 uppercase tracking-wider">Coverage</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Services -->
+<section id="services" class="py-24 px-5">
+  <div class="max-w-6xl mx-auto">
+    <div class="fade-up mb-12">
+      <p class="text-[11px] font-semibold uppercase tracking-[.2em] accent mb-3">What We Offer</p>
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-stone-100">Everything Under One Roof</h2>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <!-- Villa -->
+      <div class="fade-up d1 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('Villa enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/luxury-villa-goa-pool/400/300.jpg" alt="Villa" class="w-full h-full object-cover">
+          <span class="tag tag-hot absolute top-2 left-2">Hot</span>
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">Villas on Rent</p>
+          <p class="text-[11px] text-stone-600">3-10 BHK, pool, beachfront</p>
+          <p class="text-sm font-semibold accent mt-2">₹8K<span class="text-[11px] text-stone-600 font-normal">/night</span></p>
+        </div>
+      </div>
+
+      <!-- Yacht -->
+      <div class="fade-up d2 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('Yacht enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/yacht-party-goa-sea/400/300.jpg" alt="Yacht" class="w-full h-full object-cover">
+          <span class="tag tag-hot absolute top-2 left-2">Hot</span>
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">Yacht & Boat</p>
+          <p class="text-[11px] text-stone-600">10-100 pax, sunset cruise</p>
+          <p class="text-sm font-semibold accent mt-2">₹15K<span class="text-[11px] text-stone-600 font-normal">/onwards</span></p>
+        </div>
+      </div>
+
+      <!-- Cars -->
+      <div class="fade-up d3 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('Vehicle enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/luxury-car-rental-goa/400/300.jpg" alt="Cars" class="w-full h-full object-cover">
+          <span class="tag tag-new absolute top-2 left-2">New</span>
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">Cars & Vehicles</p>
+          <p class="text-[11px] text-stone-600">Sedan, SUV, Fortuner, bus</p>
+          <p class="text-sm font-semibold accent mt-2">₹2K<span class="text-[11px] text-stone-600 font-normal">/day</span></p>
+        </div>
+      </div>
+
+      <!-- Decor -->
+      <div class="fade-up d4 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('Decoration enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/boho-decor-beach-goa/400/300.jpg" alt="Decoration" class="w-full h-full object-cover">
+          <span class="tag tag-hot absolute top-2 left-2">Hot</span>
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">Decoration</p>
+          <p class="text-[11px] text-stone-600">Boho, floral, tropical, mandap</p>
+          <p class="text-sm font-semibold accent mt-2">₹8K<span class="text-[11px] text-stone-600 font-normal">/onwards</span></p>
+        </div>
+      </div>
+
+      <!-- DJ -->
+      <div class="fade-up d5 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('DJ enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/dj-sound-setup-goa/400/300.jpg" alt="DJ" class="w-full h-full object-cover">
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">DJ & Sound</p>
+          <p class="text-[11px] text-stone-600">DJ, speakers, console, mic</p>
+          <p class="text-sm font-semibold accent mt-2">₹10K<span class="text-[11px] text-stone-600 font-normal">/night</span></p>
+        </div>
+      </div>
+
+      <!-- Catering -->
+      <div class="fade-up d6 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('Catering enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/goa-seafood-bbq-catering/400/300.jpg" alt="Catering" class="w-full h-full object-cover">
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">Catering & BBQ</p>
+          <p class="text-[11px] text-stone-600">Goan, BBQ live counter, veg/non-veg</p>
+          <p class="text-sm font-semibold accent mt-2">₹400<span class="text-[11px] text-stone-600 font-normal">/plate</span></p>
+        </div>
+      </div>
+
+      <!-- Tent -->
+      <div class="fade-up d7 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('Tent enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/wedding-tent-goa-elegant/400/300.jpg" alt="Tent" class="w-full h-full object-cover">
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">Tent & Shamiana</p>
+          <p class="text-[11px] text-stone-600">Czech, pagoda, AC tent</p>
+          <p class="text-sm font-semibold accent mt-2">₹12K<span class="text-[11px] text-stone-600 font-normal">/onwards</span></p>
+        </div>
+      </div>
+
+      <!-- Bar Counter -->
+      <div class="fade-up d8 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('Bar counter enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/led-bar-counter-party/400/300.jpg" alt="Bar Counter" class="w-full h-full object-cover">
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">Bar Counter</p>
+          <p class="text-[11px] text-stone-600">LED bar, portable, bartender</p>
+          <p class="text-sm font-semibold accent mt-2">₹5K<span class="text-[11px] text-stone-600 font-normal">/day</span></p>
+        </div>
+      </div>
+
+      <!-- LED Furniture -->
+      <div class="fade-up d9 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('LED furniture enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/led-glow-furniture-event/400/300.jpg" alt="LED Furniture" class="w-full h-full object-cover">
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">LED Furniture</p>
+          <p class="text-[11px] text-stone-600">Sofa, table, dance floor, letters</p>
+          <p class="text-sm font-semibold accent mt-2">₹3K<span class="text-[11px] text-stone-600 font-normal">/set</span></p>
+        </div>
+      </div>
+
+      <!-- 360 Booth -->
+      <div class="fade-up d10 card glass rounded-2xl overflow-hidden cursor-pointer group" onclick="showToast('360° Booth enquiry sent — we\'ll call you shortly')">
+        <div class="aspect-[4/3] overflow-hidden relative">
+          <img src="https://picsum.photos/seed/360-photo-booth-party/400/300.jpg" alt="360 Booth" class="w-full h-full object-cover">
+          <span class="tag tag-new absolute top-2 left-2">Trending</span>
+        </div>
+        <div class="p-3.5">
+          <p class="text-sm font-semibold text-stone-100 mb-0.5">360° Photo Booth</p>
+          <p class="text-[11px] text-stone-600">Slow-mo video, LED ring, props</p>
+          <p class="text-sm font-semibold accent mt-2">₹15K<span class="text-[11px] text-stone-600 font-normal">/event</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Extra services inline -->
+    <div class="fade-up mt-6 glass rounded-2xl p-5">
+      <p class="text-[11px] font-semibold uppercase tracking-[.15em] text-stone-600 mb-3">Also Available</p>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="showToast('Cold Pyro enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Cold Pyro / Fog</button>
+        <button onclick="showToast('LED Dance Floor enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">LED Dance Floor</button>
+        <button onclick="showToast('Stage & Backdrop enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Stage & Backdrop</button>
+        <button onclick="showToast('Fairy Lights enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Fairy & Uplighting</button>
+        <button onclick="showToast('Balloon Decor enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Balloon Decor</button>
+        <button onclick="showToast('Lounge Furniture enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Lounge Furniture</button>
+        <button onclick="showToast('Photography enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Photo & Video</button>
+        <button onclick="showToast('Anchor enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Anchor / Host</button>
+        <button onclick="showToast('Car Decoration enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Car Decoration</button>
+        <button onclick="showToast('Cake enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Custom Cakes</button>
+        <button onclick="showToast('Mehendi enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Mehendi Artist</button>
+        <button onclick="showToast('Tempo Traveller enquiry sent!')" class="text-[12px] text-stone-500 border border-stone-800 rounded-lg px-3 py-1.5 hover:border-stone-600 hover:text-stone-300 transition">Tempo Traveller</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Popular -->
+<section id="popular" class="py-24 px-5 border-t border-stone-800/30">
+  <div class="max-w-6xl mx-auto">
+    <div class="fade-up mb-12">
+      <p class="text-[11px] font-semibold uppercase tracking-[.2em] accent mb-3">Most Booked</p>
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-stone-100">What People Are Booking Right Now</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="fade-up d1 card glass rounded-2xl overflow-hidden">
+        <div class="aspect-video overflow-hidden relative">
+          <img src="https://picsum.photos/seed/villa-party-goa-night/600/340.jpg" alt="Villa" class="w-full h-full object-cover">
+          <span class="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md">#1</span>
+        </div>
+        <div class="p-5">
+          <h3 class="text-base font-semibold text-stone-100 mb-1">Private Villa + Full Setup</h3>
+          <p class="text-[13px] text-stone-500 mb-4 leading-relaxed">4BHK villa with pool, décor, DJ, catering, bar counter — just bring your guests.</p>
+          <div class="flex items-end justify-between">
+            <div><span class="text-xl font-bold accent">₹45,000</span><span class="text-[11px] text-stone-600 ml-1">/night (all-in)</span></div>
+            <button onclick="showToast('Villa package added to your enquiry!')" class="btn-primary btn-sm">Book</button>
+          </div>
+          <div class="flex items-center gap-0.5 mt-3">
+            <span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span>
+            <span class="text-[11px] text-stone-600 ml-1">142 bookings</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="fade-up d2 card glass rounded-2xl overflow-hidden">
+        <div class="aspect-video overflow-hidden relative">
+          <img src="https://picsum.photos/seed/yacht-sunset-goa-party/600/340.jpg" alt="Yacht" class="w-full h-full object-cover">
+          <span class="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md">#2</span>
+        </div>
+        <div class="p-5">
+          <h3 class="text-base font-semibold text-stone-100 mb-1">Sunset Yacht + DJ + Drinks</h3>
+          <p class="text-[13px] text-stone-500 mb-4 leading-relaxed">3-hour yacht with DJ, snacks, basic drinks and décor. Bachelor parties love this.</p>
+          <div class="flex items-end justify-between">
+            <div><span class="text-xl font-bold accent">₹35,000</span><span class="text-[11px] text-stone-600 ml-1">/3 hrs</span></div>
+            <button onclick="showToast('Yacht package added to your enquiry!')" class="btn-primary btn-sm">Book</button>
+          </div>
+          <div class="flex items-center gap-0.5 mt-3">
+            <span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star-half-full"></span>
+            <span class="text-[11px] text-stone-600 ml-1">98 bookings</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="fade-up d3 card glass rounded-2xl overflow-hidden">
+        <div class="aspect-video overflow-hidden relative">
+          <img src="https://picsum.photos/seed/beach-boho-wedding-goa/600/340.jpg" alt="Boho" class="w-full h-full object-cover">
+          <span class="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md">#3</span>
+        </div>
+        <div class="p-5">
+          <h3 class="text-base font-semibold text-stone-100 mb-1">Beach Boho Decoration</h3>
+          <p class="text-[13px] text-stone-500 mb-4 leading-relaxed">Macramé arch, pampas grass, rattan, fairy lights, cushions. Complete boho look.</p>
+          <div class="flex items-end justify-between">
+            <div><span class="text-xl font-bold accent">₹25,000</span><span class="text-[11px] text-stone-600 ml-1">/setup</span></div>
+            <button onclick="showToast('Boho decor added to your enquiry!')" class="btn-primary btn-sm">Book</button>
+          </div>
+          <div class="flex items-center gap-0.5 mt-3">
+            <span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-xs" data-icon="mdi:star"></span>
+            <span class="text-[11px] text-stone-600 ml-1">127 bookings</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Packages -->
+<section id="packages" class="py-24 px-5 border-t border-stone-800/30">
+  <div class="max-w-6xl mx-auto">
+    <div class="fade-up mb-12">
+      <p class="text-[11px] font-semibold uppercase tracking-[.2em] accent mb-3">Bundled Deals</p>
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-stone-100">Save 20-30% With Packages</h2>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Birthday -->
+      <div class="fade-up d1 card glass rounded-2xl p-6 flex flex-col">
+        <div class="w-11 h-11 rounded-xl bg-pink-500/10 flex items-center justify-center mb-4">
+          <span class="iconify text-pink-400 text-xl" data-icon="mdi:cake-variant"></span>
+        </div>
+        <h3 class="text-base font-semibold text-stone-100 mb-1">Birthday Bash</h3>
+        <p class="text-[12px] text-stone-600 mb-5 flex-grow">Décor + DJ + LED furniture + cake</p>
+        <ul class="space-y-1.5 mb-6 text-[13px] text-stone-400">
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>Balloon arch + backdrop</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>DJ with sound system</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>LED sofa + table set</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>Custom 2kg cake</li>
+        </ul>
+        <p class="mb-4"><span class="text-2xl font-bold text-stone-100">₹35K</span> <span class="text-[12px] text-stone-600 line-through">₹45K</span></p>
+        <button onclick="showToast('Birthday package selected!')" class="btn-outline btn-sm w-full justify-center">Select</button>
+      </div>
+
+      <!-- Bachelor (Featured) -->
+      <div class="fade-up d2 card rounded-2xl p-6 flex flex-col relative border border-amber-600/30 bg-neutral-900/60 backdrop-blur-xl" style="box-shadow:0 0 40px rgba(217,119,6,.04)">
+        <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-600 text-neutral-950 text-[9px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-md">Most Booked</span>
+        <div class="w-11 h-11 rounded-xl bg-amber-500/10 flex items-center justify-center mb-4">
+          <span class="iconify text-amber-400 text-xl" data-icon="mdi:party-popper"></span>
+        </div>
+        <h3 class="text-base font-semibold text-stone-100 mb-1">Bachelor Party</h3>
+        <p class="text-[12px] text-stone-600 mb-5 flex-grow">Villa + Yacht + DJ + 360° Booth + Bar</p>
+        <ul class="space-y-1.5 mb-6 text-[13px] text-stone-400">
+          <li class="flex items-start gap-2"><span class="iconify accent text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>4BHK villa (1 night)</li>
+          <li class="flex items-start gap-2"><span class="iconify accent text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>3hr yacht with DJ</li>
+          <li class="flex items-start gap-2"><span class="iconify accent text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>Cold pyro entrance</li>
+          <li class="flex items-start gap-2"><span class="iconify accent text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>360° photo booth</li>
+          <li class="flex items-start gap-2"><span class="iconify accent text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>LED bar + bartender</li>
+        </ul>
+        <p class="mb-4"><span class="text-2xl font-bold accent">₹75K</span> <span class="text-[12px] text-stone-600 line-through">₹1L</span></p>
+        <button onclick="showToast('Bachelor package selected!')" class="btn-primary btn-sm w-full justify-center">Select</button>
+      </div>
+
+      <!-- Wedding -->
+      <div class="fade-up d3 card glass rounded-2xl p-6 flex flex-col">
+        <div class="w-11 h-11 rounded-xl bg-rose-500/10 flex items-center justify-center mb-4">
+          <span class="iconify text-rose-400 text-xl" data-icon="mdi:heart-multiple"></span>
+        </div>
+        <h3 class="text-base font-semibold text-stone-100 mb-1">Beach Wedding</h3>
+        <p class="text-[12px] text-stone-600 mb-5 flex-grow">Full décor + Tent + Catering + DJ + Car</p>
+        <ul class="space-y-1.5 mb-6 text-[13px] text-stone-400">
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>Mandap + aisle décor</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>AC tent (100 pax)</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>Veg + NonVeg catering</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>DJ + stage + lighting</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>Decorated car + taxi shuttle</li>
+        </ul>
+        <p class="mb-4"><span class="text-2xl font-bold text-stone-100">₹2.5L</span> <span class="text-[12px] text-stone-600 line-through">₹3.2L</span></p>
+        <button onclick="showToast('Wedding package selected!')" class="btn-outline btn-sm w-full justify-center">Select</button>
+      </div>
+
+      <!-- Corporate -->
+      <div class="fade-up d4 card glass rounded-2xl p-6 flex flex-col">
+        <div class="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
+          <span class="iconify text-blue-400 text-xl" data-icon="mdi:briefcase-variant"></span>
+        </div>
+        <h3 class="text-base font-semibold text-stone-100 mb-1">Corporate Offsite</h3>
+        <p class="text-[12px] text-stone-600 mb-5 flex-grow">Villa + AV + Catering + Transport</p>
+        <ul class="space-y-1.5 mb-6 text-[13px] text-stone-400">
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>Villa or venue booking</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>LED screen + projector</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>PA system + mics</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>Buffet lunch/dinner</li>
+          <li class="flex items-start gap-2"><span class="iconify text-green-500 text-sm mt-0.5 shrink-0" data-icon="mdi:check"></span>Tempo Traveller pickup</li>
+        </ul>
+        <p class="mb-4"><span class="text-2xl font-bold text-stone-100">₹1.5L</span> <span class="text-[12px] text-stone-600 line-through">₹2L</span></p>
+        <button onclick="showToast('Corporate package selected!')" class="btn-outline btn-sm w-full justify-center">Select</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section id="process" class="py-24 px-5 border-t border-stone-800/30">
+  <div class="max-w-6xl mx-auto">
+    <div class="fade-up mb-12 text-center">
+      <p class="text-[11px] font-semibold uppercase tracking-[.2em] accent mb-3">Simple Process</p>
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-stone-100">Four Steps. Zero Hassle.</h2>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="fade-up d1 text-center">
+        <div class="w-14 h-14 mx-auto rounded-2xl glass flex items-center justify-center mb-4"><span class="text-lg font-bold accent">01</span></div>
+        <h3 class="text-sm font-semibold text-stone-100 mb-1">Tell Us Your Plan</h3>
+        <p class="text-[12px] text-stone-600 leading-relaxed">WhatsApp or call — event type, date, guest count, budget.</p>
+      </div>
+      <div class="fade-up d2 text-center">
+        <div class="w-14 h-14 mx-auto rounded-2xl glass flex items-center justify-center mb-4"><span class="text-lg font-bold accent">02</span></div>
+        <h3 class="text-sm font-semibold text-stone-100 mb-1">Get a Quote</h3>
+        <p class="text-[12px] text-stone-600 leading-relaxed">Detailed breakup sent within 30 minutes. No hidden costs.</p>
+      </div>
+      <div class="fade-up d3 text-center">
+        <div class="w-14 h-14 mx-auto rounded-2xl glass flex items-center justify-center mb-4"><span class="text-lg font-bold accent">03</span></div>
+        <h3 class="text-sm font-semibold text-stone-100 mb-1">Pay 30% Advance</h3>
+        <p class="text-[12px] text-stone-600 leading-relaxed">UPI, bank transfer, or cash. Your date gets locked.</p>
+      </div>
+      <div class="fade-up d4 text-center">
+        <div class="w-14 h-14 mx-auto rounded-2xl glass flex items-center justify-center mb-4"><span class="text-lg font-bold accent">04</span></div>
+        <h3 class="text-sm font-semibold text-stone-100 mb-1">We Set Up. You Enjoy.</h3>
+        <p class="text-[12px] text-stone-600 leading-relaxed">Our team handles setup, management & teardown.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trust -->
+<section class="py-20 px-5 border-t border-stone-800/30">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="fade-up d1 glass rounded-2xl p-5 text-center">
+        <span class="iconify accent text-2xl mb-2" data-icon="mdi:shield-check-outline"></span>
+        <p class="text-sm font-medium text-stone-200">Fully Insured</p>
+        <p class="text-[11px] text-stone-600 mt-1">All equipment & property covered</p>
+      </div>
+      <div class="fade-up d2 glass rounded-2xl p-5 text-center">
+        <span class="iconify accent text-2xl mb-2" data-icon="mdi:clock-fast"></span>
+        <p class="text-sm font-medium text-stone-200">Same Day Available</p>
+        <p class="text-[11px] text-stone-600 mt-1">Last-minute? We can manage</p>
+      </div>
+      <div class="fade-up d3 glass rounded-2xl p-5 text-center">
+        <span class="iconify accent text-2xl mb-2" data-icon="mdi:map-marker-radius-outline"></span>
+        <p class="text-sm font-medium text-stone-200">All Goa Coverage</p>
+        <p class="text-[11px] text-stone-600 mt-1">Candolim to Palolem, everywhere</p>
+      </div>
+      <div class="fade-up d4 glass rounded-2xl p-5 text-center">
+        <span class="iconify accent text-2xl mb-2" data-icon="mdi:cash-refund"></span>
+        <p class="text-sm font-medium text-stone-200">Money-Back Guarantee</p>
+        <p class="text-[11px] text-stone-600 mt-1">Not happy? Full refund. No questions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Reviews -->
+<section id="reviews" class="py-24 px-5 border-t border-stone-800/30">
+  <div class="max-w-6xl mx-auto">
+    <div class="fade-up mb-12">
+      <p class="text-[11px] font-semibold uppercase tracking-[.2em] accent mb-3">Client Reviews</p>
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-stone-100">What People Say</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="fade-up d1 glass rounded-2xl p-6 card">
+        <div class="flex gap-0.5 mb-3">
+          <span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span>
+        </div>
+        <p class="text-[13px] text-stone-400 leading-relaxed mb-5">"Took the bachelor package — villa + yacht + DJ + 360 booth. Cold pyro entry was insane. Boys still talk about it. One WhatsApp message and everything was sorted. No follow-up headache."</p>
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-xs font-bold text-white">RS</div>
+          <div><p class="text-sm font-medium text-stone-200">Rahul Sharma</p><p class="text-[11px] text-stone-600">Bachelor Party · Candolim</p></div>
+        </div>
+      </div>
+      <div class="fade-up d2 glass rounded-2xl p-6 card">
+        <div class="flex gap-0.5 mb-3">
+          <span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span>
+        </div>
+        <p class="text-[13px] text-stone-400 leading-relaxed mb-5">"Beach wedding with full setup — mandap, tent, catering, DJ, decorated car for the couple. The boho mandap was exactly what I saw on Pinterest. Guests loved the Goan fish curry."</p>
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center text-xs font-bold text-white">PA</div>
+          <div><p class="text-sm font-medium text-stone-200">Priya & Arjun</p><p class="text-[11px] text-stone-600">Wedding · Vagator</p></div>
+        </div>
+      </div>
+      <div class="fade-up d3 glass rounded-2xl p-6 card">
+        <div class="flex gap-0.5 mb-3">
+          <span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star"></span><span class="iconify text-amber-400 text-sm" data-icon="mdi:star-half-full"></span>
+        </div>
+        <p class="text-[13px] text-stone-400 leading-relaxed mb-5">"Booked a 5BHK villa in Morjim + Fortuner for airport pickup + catering for our team offsite. Everything was coordinated by one person. Very professional. Will use again."</p>
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-xs font-bold text-white">MK</div>
+          <div><p class="text-sm font-medium text-stone-200">Meera Kapoor</p><p class="text-[11px] text-stone-600">Corporate Offsite · Morjim</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Contact -->
+<section id="contact" class="py-24 px-5 border-t border-stone-800/30">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-14">
+      <div class="fade-up">
+        <p class="text-[11px] font-semibold uppercase tracking-[.2em] accent mb-3">Get In Touch</p>
+        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-stone-100 mb-4">Tell Us Your Plan.</h2>
+        <p class="text-[14px] text-stone-500 leading-relaxed mb-8">We'll send you a clear, itemized quote within 30 minutes. No pressure, no spam.</p>
+
+        <div class="space-y-5">
+          <a href="https://wa.me/919876543210" target="_blank" class="flex items-center gap-4 group">
+            <div class="w-11 h-11 rounded-xl bg-green-500/10 border border-green-500/15 flex items-center justify-center shrink-0"><span class="iconify text-green-400 text-lg" data-icon="mdi:whatsapp"></span></div>
+            <div><p class="text-sm font-medium text-stone-200 group-hover:text-white transition">WhatsApp</p><p class="text-[13px] text-stone-600">+91 98765 43210</p></div>
+          </a>
+          <a href="tel:+919876543210" class="flex items-center gap-4 group">
+            <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/15 flex items-center justify-center shrink-0"><span class="iconify accent text-lg" data-icon="mdi:phone"></span></div>
+            <div><p class="text-sm font-medium text-stone-200 group-hover:text-white transition">Call Us</p><p class="text-[13px] text-stone-600">+91 98765 43210 · 24/7</p></div>
+          </a>
+          <div class="flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-stone-500/10 border border-stone-500/15 flex items-center justify-center shrink-0"><span class="iconify text-stone-400 text-lg" data-icon="mdi:map-marker-outline"></span></div>
+            <div><p class="text-sm font-medium text-stone-200">Service Area</p><p class="text-[13px] text-stone-600">All Goa — North & South</p></div>
+          </div>
+          <a href="#" class="flex items-center gap-4 group">
+            <div class="w-11 h-11 rounded-xl bg-pink-500/10 border border-pink-500/15 flex items-center justify-center shrink-0"><span class="iconify text-pink-400 text-lg" data-icon="mdi:instagram"></span></div>
+            <div><p class="text-sm font-medium text-stone-200 group-hover:text-white transition">Instagram</p><p class="text-[13px] text-stone-600">@goaeventhub</p></div>
+          </a>
+        </div>
+      </div>
+
+      <div class="fade-up d2">
+        <form id="contactForm" class="glass rounded-2xl p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-[11px] font-medium uppercase tracking-wider text-stone-600 mb-1.5 block">Name *</label>
+              <input type="text" required placeholder="Your name" class="w-full bg-neutral-900/60 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 placeholder-stone-700 transition">
+            </div>
+            <div>
+              <label class="text-[11px] font-medium uppercase tracking-wider text-stone-600 mb-1.5 block">Phone *</label>
+              <input type="tel" required placeholder="+91 98765 43210" class="w-full bg-neutral-900/60 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 placeholder-stone-700 transition">
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] font-medium uppercase tracking-wider text-stone-600 mb-1.5 block">Event Type *</label>
+            <select required class="w-full bg-neutral-900/60 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-400 transition appearance-none">
+              <option value="">Select</option>
+              <option>Wedding</option>
+              <option>Bachelor / Bachelorette</option>
+              <option>Birthday</option>
+              <option>Corporate Offsite</option>
+              <option>Yacht Party</option>
+              <option>Vacation (Villa + Car)</option>
+              <option>Engagement</option>
+              <option>Anniversary</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-[11px] font-medium uppercase tracking-wider text-stone-600 mb-1.5 block">Date *</label>
+              <input type="date" required class="w-full bg-neutral-900/60 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-400 transition">
+            </div>
+            <div>
+              <label class="text-[11px] font-medium uppercase tracking-wider text-stone-600 mb-1.5 block">Guests</label>
+              <input type="number" placeholder="50" class="w-full bg-neutral-900/60 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 placeholder-stone-700 transition">
+            </div>
+          </div>
+          <div>
+            <label class="text-[11px] font-medium uppercase tracking-wider text-stone-600 mb-1.5 block">What Do You Need?</label>
+            <textarea rows="3" placeholder="E.g. 4BHK villa with pool, Fortuner for airport, DJ & décor for 30 people..." class="w-full bg-neutral-900/60 border border-stone-800 rounded-xl px-3.5 py-2.5 text-sm text-stone-100 placeholder-stone-700 transition resize-none"></textarea>
+          </div>
+          <button type="submit" class="btn-primary w-full justify-center">Send Enquiry — Free Quote in 30 Min</button>
+          <p class="text-[10px] text-stone-700 text-center">No spam. No obligation.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="py-20 px-5 border-t border-stone-800/30 text-center">
+  <div class="max-w-xl mx-auto fade-up">
+    <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-stone-100 mb-3">Stop Coordinating 10 Vendors.</h2>
+    <p class="text-sm text-stone-500 mb-6">One call. One team. One epic Goa event. That's the Goa Event Hub promise.</p>
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href="https://wa.me/919876543210?text=Hi%2C%20I%20want%20to%20plan%20an%20event%20in%20Goa" target="_blank" class="btn-primary" style="background:#16a34a">
+        <span class="iconify text-lg" data-icon="mdi:whatsapp"></span> WhatsApp Now
+      </a>
+      <a href="tel:+919876543210" class="btn-outline">Call +91 98765 43210</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-stone-800/30 py-12 px-5">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+      <div class="col-span-2 md:col-span-1">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-lg accent-bg flex items-center justify-center"><span class="iconify text-neutral-950 text-sm" data-icon="mdi:party-popper"></span></div>
+          <span class="text-sm font-semibold text-stone-200">Goa Event Hub</span>
+        </div>
+        <p class="text-[12px] text-stone-600 leading-relaxed mb-3">Goa's most trusted event rental platform. 50+ services, 500+ events.</p>
+        <div class="flex gap-2">
+          <a href="#" class="w-8 h-8 rounded-lg border border-stone-800 flex items-center justify-center text-stone-600 hover:text-amber-400 hover:border-amber-500/30 transition text-sm"><span class="iconify" data-icon="mdi:instagram"></span></a>
+          <a href="#" class="w-8 h-8 rounded-lg border border-stone-800 flex items-center justify-center text-stone-600 hover:text-amber-400 hover:border-amber-500/30 transition text-sm"><span class="iconify" data-icon="mdi:facebook"></span></a>
+          <a href="#" class="w-8 h-8 rounded-lg border border-stone-800 flex items-center justify-center text-stone-600 hover:text-amber-400 hover:border-amber-500/30 transition text-sm"><span class="iconify" data-icon="mdi:youtube"></span></a>
+        </div>
+      </div>
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-3">Rentals</p>
+        <ul class="space-y-1.5 text-[12px] text-stone-600">
+          <li><a href="#services" class="hover:text-stone-300 transition">Villas</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">Yachts & Boats</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">Cars & Vehicles</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">Decoration</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">DJ & Sound</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">Catering</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-3">More</p>
+        <ul class="space-y-1.5 text-[12px] text-stone-600">
+          <li><a href="#services" class="hover:text-stone-300 transition">Tent & Shamiana</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">Bar Counter</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">LED Furniture</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">360° Photo Booth</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">Photography</a></li>
+          <li><a href="#services" class="hover:text-stone-300 transition">Anchor / Host</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-stone-500 mb-3">Quick Links</p>
+        <ul class="space-y-1.5 text-[12px] text-stone-600">
+          <li><a href="#packages" class="hover:text-stone-300 transition">Packages</a></li>
+          <li><a href="#popular" class="hover:text-stone-300 transition">Popular</a></li>
+          <li><a href="#process" class="hover:text-stone-300 transition">How It Works</a></li>
+          <li><a href="#reviews" class="hover:text-stone-300 transition">Reviews</a></li>
+          <li><a href="#contact" class="hover:text-stone-300 transition">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-stone-800/30 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p class="text-[11px] text-stone-700">© 2025 Goa Event Hub. All rights reserved.</p>
+      <div class="flex flex-wrap justify-center gap-1.5">
+        <span class="text-[10px] text-stone-700 bg-neutral-900/50 rounded px-2 py-0.5">Candolim</span>
+        <span class="text-[10px] text-stone-700 bg-neutral-900/50 rounded px-2 py-0.5">Calangute</span>
+        <span class="text-[10px] text-stone-700 bg-neutral-900/50 rounded px-2 py-0.5">Baga</span>
+        <span class="text-[10px] text-stone-700 bg-neutral-900/50 rounded px-2 py-0.5">Anjuna</span>
+        <span class="text-[10px] text-stone-700 bg-neutral-900/50 rounded px-2 py-0.5">Vagator</span>
+        <span class="text-[10px] text-stone-700 bg-neutral-900/50 rounded px-2 py-0.5">Morjim</span>
+        <span class="text-[10px] text-stone-700 bg-neutral-900/50 rounded px-2 py-0.5">Panjim</span>
+        <span class="text-[10px] text-stone-700 bg-neutral-900/50 rounded px-2 py-0.5">Palolem</span>
+        <span class="text-[10px] text-stone-700 bg-neutral-900/50 rounded px-2 py-0.5">+ more</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- WhatsApp Float -->
+<a href="https://wa.me/919876543210?text=Hi%2C%20I%20need%20event%20services%20in%20Goa" target="_blank" class="fixed bottom-5 left-5 z-50 w-13 h-13 bg-green-600 rounded-full flex items-center justify-center shadow-lg shadow-green-600/25 hover:bg-green-500 hover:scale-105 transition-all p-3.5">
+  <span class="iconify text-white text-2xl" data-icon="mdi:whatsapp"></span>
+</a>
+
+<script>
+// Scroll reveal
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') });
+}, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+
+// Toast
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Mobile menu
+function toggleMob() { document.getElementById('mobMenu').classList.toggle('open') }
+
+// Search
+const items = [
+  {n:'Villas on Rent',i:'mdi:home-city',c:'Property'},
+  {n:'Yacht & Boat',i:'mdi:sail-boat',c:'Experience'},
+  {n:'Cars & Vehicles',i:'mdi:car-side',c:'Transport'},
+  {n:'Fortuner on Rent',i:'mdi:car-sports',c:'Transport'},
+  {n:'Tempo Traveller',i:'mdi:bus-side',c:'Transport'},
+  {n:'Beach Boho Decoration',i:'mdi:flower-tulip',c:'Décor'},
+  {n:'DJ & Sound System',i:'mdi:music-note',c:'Entertainment'},
+  {n:'Catering & BBQ',i:'mdi:food-fork-drink',c:'Food'},
+  {n:'Tent & Shamiana',i:'mdi:tent',c:'Venue'},
+  {n:'LED Bar Counter',i:'mdi:glass-cocktail',c:'Bar'},
+  {n:'LED Furniture',i:'mdi:led-on',c:'Furniture'},
+  {n:'360° Photo Booth',i:'mdi:camera-flip',c:'Trending'},
+  {n:'Cold Pyro Machine',i:'mdi:firework',c:'Effects'},
+  {n:'LED Dance Floor',i:'mdi:dance-ballroom',c:'Trending'},
+  {n:'Stage & Backdrop',i:'mdi:projector-screen',c:'Venue'},
+  {n:'Fairy Lights & Uplighting',i:'mdi:lightbulb-on',c:'Lighting'},
+  {n:'Balloon Decoration',i:'mdi:balloon',c:'Décor'},
+  {n:'Lounge Furniture',i:'mdi:sofa-single',c:'Furniture'},
+  {n:'Photography & Video',i:'mdi:camera-outline',c:'Media'},
+  {n:'Anchor / Host',i:'mdi:microphone-variant',c:'Entertainment'},
+  {n:'Car Decoration',i:'mdi:car-estate',c:'Décor'},
+  {n:'Custom Cakes',i:'mdi:cake-variant',c:'Food'},
+  {n:'Mehendi Artist',i:'mdi:hand-heart',c:'Wedding'},
+];
+
+function openSearch() {
+  document.getElementById('searchOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('searchInput').focus(), 100);
+}
+function closeSearch() {
+  document.getElementById('searchOverlay').classList.remove('open');
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchResults').classList.add('hidden');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeSearch();
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch() }
+});
+
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  const r = document.getElementById('searchResults');
+  if (!q) { r.classList.add('hidden'); return }
+  r.classList.remove('hidden');
+  const f = items.filter(i => i.n.toLowerCase().includes(q));
+  r.innerHTML = f.length ? f.map(i => `
+    <button onclick="closeSearch();showToast('${i.n} enquiry sent!')" class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-800/50 transition text-left">
+      <span class="iconify text-stone-500" data-icon="${i.i}"></span>
+      <span class="text-sm text-stone-200 flex-1">${i.n}</span>
+      <span class="text-[10px] text-stone-700">${i.c}</span>
+    </button>`).join('') : '<p class="text-sm text-stone-700 py-2">No results</p>';
+});
+
+// Form
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  showToast('Enquiry sent! We\'ll call you within 30 minutes.');
+  this.reset();
+});
+
+// Nav scroll
+window.addEventListener('scroll', () => {
+  const n = document.getElementById('mainNav');
+  n.style.background = window.scrollY > 60 ? 'rgba(10,10,10,.85)' : 'transparent';
+  n.style.backdropFilter = window.scrollY > 60 ? 'blur(16px)' : 'none';
+});
+</script>
+</body>
+</html>
